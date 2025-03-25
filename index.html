@@ -40,34 +40,37 @@
     #container {
       background: white;
       padding: 1rem;
-      margin: 1rem;
+      margin: 1rem auto;
       border-radius: 12px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       width: 100%;
-      max-width: 500px;
+      max-width: 400px;
     }
 
     #reader {
       width: 100%;
-      aspect-ratio: 1;
+      height: 300px;
       position: relative;
       border-radius: 8px;
       overflow: hidden;
+      background-color: #000;
     }
 
     #overlay {
       position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      box-shadow:
-        0 0 0 40px rgba(0, 0, 0, 0.4),
-        inset 0 0 0 3px limegreen;
-      pointer-events: none;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 200px;
+      height: 200px;
+      border: 2px solid limegreen;
+      box-sizing: border-box;
+      z-index: 10;
     }
 
     #result {
       margin-top: 1rem;
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       font-weight: bold;
       text-align: center;
     }
@@ -83,9 +86,9 @@
     }
 
     button {
-      padding: 1rem;
+      padding: 0.75rem;
       border: none;
-      border-radius: 8px;
+      border-radius: 6px;
       font-size: 1rem;
       font-weight: bold;
       cursor: pointer;
@@ -111,26 +114,12 @@
       border-bottom: 1px solid #ddd;
       font-size: 0.95rem;
     }
-
-    @media (max-width: 480px) {
-      #container {
-        margin: 0.5rem;
-        padding: 0.75rem;
-      }
-      #result {
-        font-size: 1rem;
-      }
-      button {
-        font-size: 0.95rem;
-        padding: 0.75rem;
-      }
-    }
   </style>
 </head>
 <body>
   <header>
     <h1>📷 QR-Code Scanner</h1>
-    <p>Mobilefreundlich für Veranstaltungen</p>
+    <p>Für deine Veranstaltung</p>
   </header>
 
   <div id="container">
@@ -160,9 +149,10 @@
     const errorSound = document.getElementById("errorSound");
 
     let scannedCodes = JSON.parse(localStorage.getItem("scannedCodes") || "[]");
+    let scanCooldown = false;
 
     const validCodes = [
-      "VIP-001", "Fiona-ist-die-beste", "VIP-004", "EINLADUNG-JULIA", "GAST-2025"
+      "VIP-001", "TICKET-ABC", "12345", "EINLADUNG-JULIA", "GAST-2025"
     ];
 
     function updateCodeList() {
@@ -179,6 +169,10 @@
     }
 
     function handleScan(qrCodeMessage) {
+      if (scanCooldown) return;
+      scanCooldown = true;
+      setTimeout(() => scanCooldown = false, 2000); // 2 Sekunden Pause
+
       const trimmed = qrCodeMessage.trim();
       const timestamp = new Date().toLocaleTimeString();
 
@@ -239,7 +233,7 @@
           if (backCamera) {
             html5QrCode.start(
               backCamera.id,
-              { fps: 10, qrbox: { width: 250, height: 250 } },
+              { fps: 10, qrbox: 250 },
               handleScan,
               error => {}
             );
