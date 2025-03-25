@@ -58,14 +58,24 @@
 
     #overlay {
       position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    #scan-highlight {
+      position: absolute;
       top: 50%;
       left: 50%;
+      width: 250px;
+      height: 150px;
       transform: translate(-50%, -50%);
-      width: 200px;
-      height: 200px;
-      border: 2px solid limegreen;
-      box-sizing: border-box;
-      z-index: 10;
+      border: 3px solid limegreen;
+      box-shadow: 0 0 15px rgba(0,255,0,0.6);
+      z-index: 3;
     }
 
     #result {
@@ -73,6 +83,7 @@
       font-size: 1.1rem;
       font-weight: bold;
       text-align: center;
+      z-index: 5;
     }
 
     .valid { color: var(--green); }
@@ -124,7 +135,9 @@
 
   <div id="container">
     <div id="reader">
-      <div id="overlay"></div>
+      <div id="overlay">
+        <div id="scan-highlight"></div>
+      </div>
     </div>
     <div id="result"></div>
 
@@ -139,8 +152,8 @@
     </div>
   </div>
 
-  <audio id="successSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
-  <audio id="errorSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+  <audio id="successSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_b51a314e84.mp3?filename=correct-2-46134.mp3"></audio>
+  <audio id="errorSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_3f8c9ed973.mp3?filename=error-2-36059.mp3"></audio>
 
   <script>
     const resultEl = document.getElementById("result");
@@ -165,20 +178,20 @@
     }
 
     function resetBackground() {
-      document.body.style.backgroundColor = "var(--light-gray)";
+      document.getElementById("container").style.backgroundColor = "white";
     }
 
     function handleScan(qrCodeMessage) {
       if (scanCooldown) return;
       scanCooldown = true;
-      setTimeout(() => scanCooldown = false, 2000); // 2 Sekunden Pause
+      setTimeout(() => scanCooldown = false, 2000);
 
       const trimmed = qrCodeMessage.trim();
       const timestamp = new Date().toLocaleTimeString();
 
       if (trimmed === "" || !validCodes.includes(trimmed)) {
         resultEl.innerHTML = `<p class="invalid">❌ Ungültig: "${trimmed}"</p>`;
-        document.body.style.backgroundColor = "#ffcdd2";
+        document.getElementById("container").style.backgroundColor = "#ffcdd2";
         errorSound.play();
         setTimeout(resetBackground, 1500);
         return;
@@ -186,7 +199,7 @@
 
       if (scannedCodes.some(item => item.code === trimmed)) {
         resultEl.innerHTML = `<p class="invalid">⚠️ Bereits gescannt: "${trimmed}"</p>`;
-        document.body.style.backgroundColor = "#ffcdd2";
+        document.getElementById("container").style.backgroundColor = "#ffcdd2";
         errorSound.play();
         setTimeout(resetBackground, 1500);
         return;
@@ -195,7 +208,7 @@
       scannedCodes.push({ code: trimmed, time: timestamp });
       localStorage.setItem("scannedCodes", JSON.stringify(scannedCodes));
       resultEl.innerHTML = `<p class="valid">✅ Gültig: "${trimmed}"</p>`;
-      document.body.style.backgroundColor = "#c8e6c9";
+      document.getElementById("container").style.backgroundColor = "#c8e6c9";
       successSound.play();
       updateCodeList();
       setTimeout(resetBackground, 1500);
