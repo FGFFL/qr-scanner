@@ -116,15 +116,6 @@
 
     const today = new Date().toISOString().split("T")[0]; // z. B. "2025-03-27"
 
-    fetch("valid-codes.json")
-      .then(res => res.json())
-      .then(data => {
-        validCodes = data.codes;
-      })
-      .catch(() => {
-        resultEl.innerHTML = `<p class="invalid">🚫 Fehler beim Laden der gültigen Codes</p>`;
-      });
-
     function updateCodeList() {
       codeListEl.innerHTML = "";
       scannedCodes.forEach(item => {
@@ -217,8 +208,17 @@
         });
     }
 
-    updateCodeList();
-    startScanner();
+    // Lade Codes und starte Scanner erst danach!
+    fetch("valid-codes.json")
+      .then(res => res.json())
+      .then(data => {
+        validCodes = data.codes;
+        updateCodeList();
+        startScanner(); // Jetzt starten!
+      })
+      .catch(() => {
+        resultEl.innerHTML = `<p class="invalid">🚫 Fehler beim Laden der gültigen Codes</p>`;
+      });
   </script>
 </body>
 </html>
