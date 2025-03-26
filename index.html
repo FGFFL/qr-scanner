@@ -44,8 +44,9 @@
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      box-shadow: 0 0 0 60px rgba(0, 0, 0, 0.4),
-                  inset 0 0 0 3px limegreen;
+      box-shadow:
+        0 0 0 60px rgba(0, 0, 0, 0.4),
+        inset 0 0 0 3px limegreen;
       pointer-events: none;
     }
     #result {
@@ -81,8 +82,8 @@
 </head>
 <body>
   <header>
-    <h1>Der FGF-QR-Code Scanner</h1>
-    <p>von Luis entwickelt</p>
+    <h1>QR-Code Scanner</h1>
+    <p>Mit optionalem Datum</p>
   </header>
 
   <div id="container">
@@ -113,15 +114,15 @@
     let isScanningPaused = false;
     let validCodes = [];
 
-    const today = new Date().toISOString().split("T")[0]; // Format: YYYY-MM-DD
+    const today = new Date().toISOString().split("T")[0]; // z. B. "2025-03-27"
 
     fetch("valid-codes.json")
-      .then(response => response.json())
+      .then(res => res.json())
       .then(data => {
         validCodes = data.codes;
       })
-      .catch(err => {
-        resultEl.innerHTML = `<p class="invalid">🚫 Fehler beim Laden der Codes</p>`;
+      .catch(() => {
+        resultEl.innerHTML = `<p class="invalid">🚫 Fehler beim Laden der gültigen Codes</p>`;
       });
 
     function updateCodeList() {
@@ -149,8 +150,8 @@
         resultEl.innerHTML = `<p class="invalid">❌ Ungültiger Code: "${trimmed}"</p>`;
         document.body.style.backgroundColor = "#ffcdd2";
         errorSound.play();
-      } else if (entry.date !== today) {
-        resultEl.innerHTML = `<p class="invalid">❌ Code nicht gültig für heute (${today})</p>`;
+      } else if (entry.date && entry.date !== today) {
+        resultEl.innerHTML = `<p class="invalid">❌ Nicht gültig für heute (${today})</p>`;
         document.body.style.backgroundColor = "#ffcdd2";
         errorSound.play();
       } else if (scannedCodes.some(item => item.code === trimmed)) {
