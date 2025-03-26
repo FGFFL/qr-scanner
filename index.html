@@ -190,38 +190,18 @@
     function startScanner() {
       const html5QrCode = new Html5Qrcode("reader");
 
-      Html5Qrcode.getCameras()
-        .then(devices => {
-          let selectedCameraId;
-
-          for (let device of devices) {
-            if (/back|rear/i.test(device.label)) {
-              selectedCameraId = device.id;
-              break;
-            }
-          }
-
-          if (!selectedCameraId && devices.length > 0) {
-            selectedCameraId = devices[0].id;
-          }
-
-          if (selectedCameraId) {
-            html5QrCode.start(
-              selectedCameraId,
-              { fps: 10, qrbox: { width: 250, height: 250 } },
-              handleScan,
-              error => {}
-            );
-          } else {
-            resultEl.innerHTML = `<p class="invalid">🚫 Keine Kamera gefunden</p>`;
-          }
-        })
-        .catch(() => {
-          resultEl.innerHTML = `<p class="invalid">🚫 Kamera-Zugriff verweigert</p>`;
-        });
+      html5QrCode.start(
+        { facingMode: "environment" }, // 🔥 Rückkamera anfordern (iOS/Android)
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        handleScan,
+        error => {}
+      ).catch(err => {
+        resultEl.innerHTML = `<p class="invalid">🚫 Scanner konnte nicht gestartet werden</p>`;
+        console.error(err);
+      });
     }
 
-    // Lade gültige Codes und starte dann den Scanner
+    // Lade gültige Codes und starte Scanner
     fetch("valid-codes.json")
       .then(res => res.json())
       .then(data => {
