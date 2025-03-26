@@ -114,7 +114,7 @@
     let isScanningPaused = false;
     let validCodes = [];
 
-    const today = new Date().toISOString().split("T")[0]; // z. B. "2025-03-27"
+    const today = new Date().toISOString().split("T")[0]; // Format: YYYY-MM-DD
 
     function updateCodeList() {
       codeListEl.innerHTML = "";
@@ -189,12 +189,25 @@
 
     function startScanner() {
       const html5QrCode = new Html5Qrcode("reader");
+
       Html5Qrcode.getCameras()
         .then(devices => {
-          const backCamera = devices.find(device => device.label.toLowerCase().includes("back")) || devices[0];
-          if (backCamera) {
+          let selectedCameraId;
+
+          for (let device of devices) {
+            if (/back|rear/i.test(device.label)) {
+              selectedCameraId = device.id;
+              break;
+            }
+          }
+
+          if (!selectedCameraId && devices.length > 0) {
+            selectedCameraId = devices[0].id;
+          }
+
+          if (selectedCameraId) {
             html5QrCode.start(
-              backCamera.id,
+              selectedCameraId,
               { fps: 10, qrbox: { width: 250, height: 250 } },
               handleScan,
               error => {}
@@ -208,13 +221,13 @@
         });
     }
 
-    // Lade Codes und starte Scanner erst danach!
+    // Lade gültige Codes und starte dann den Scanner
     fetch("valid-codes.json")
       .then(res => res.json())
       .then(data => {
         validCodes = data.codes;
         updateCodeList();
-        startScanner(); // Jetzt starten!
+        startScanner();
       })
       .catch(() => {
         resultEl.innerHTML = `<p class="invalid">🚫 Fehler beim Laden der gültigen Codes</p>`;
