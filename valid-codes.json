@@ -1,0 +1,24 @@
+{
+  "codes": [
+    {
+      "code": "TICKET-1EJ3PW",
+      "date": "2025-03-26"
+    },
+    {
+      "code": "TICKET-1NAV35",
+      "date": "2025-03-28"
+    },
+    {
+      "code": "TICKET-FOOBAR",
+      "date": "2025-03-29"
+    },
+    {
+      "code": "TICKET-HELLO1",
+      "date": "2025-03-27"
+    },
+    {
+      "code": "TICKET-TEST42",
+      "date": "2025-03-28"
+    }
+  ]
+}
