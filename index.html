@@ -52,10 +52,12 @@
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.07);
       width: 95%;
       max-width: 600px;
+      transition: background-color 0.3s ease;
     }
 
     #reader {
       width: 100%;
+      max-width: 400px;
       aspect-ratio: 1;
       margin: auto;
       position: relative;
@@ -196,6 +198,7 @@
 
   <script>
     const resultEl = document.getElementById("result");
+    const containerEl = document.getElementById("container");
     const codeListEl = document.getElementById("codeList");
     const successSound = document.getElementById("successSound");
     const errorSound = document.getElementById("errorSound");
@@ -215,8 +218,9 @@
       });
     }
 
-    function resetBackground() {
+    function resetVisualFeedback() {
       document.body.style.backgroundColor = "#f9f9f9";
+      containerEl.style.backgroundColor = "white";
     }
 
     function handleScan(qrCodeMessage) {
@@ -229,27 +233,27 @@
 
       if (!entry) {
         resultEl.innerHTML = `<p class="invalid">❌ Ungültiger Code: "${trimmed}"</p>`;
-        document.body.style.backgroundColor = "#ffcdd2";
+        containerEl.style.backgroundColor = "#ffcdd2";
         errorSound.play();
       } else if (entry.date && entry.date !== today) {
         resultEl.innerHTML = `<p class="invalid">❌ Nicht gültig für heute (${today})</p>`;
-        document.body.style.backgroundColor = "#ffcdd2";
+        containerEl.style.backgroundColor = "#ffcdd2";
         errorSound.play();
       } else if (scannedCodes.some(item => item.code === trimmed)) {
         resultEl.innerHTML = `<p class="invalid">⚠️ Bereits gescannt: "${trimmed}"</p>`;
-        document.body.style.backgroundColor = "#ffcdd2";
+        containerEl.style.backgroundColor = "#ffcdd2";
         errorSound.play();
       } else {
         scannedCodes.push({ code: trimmed, time: timestamp });
         localStorage.setItem("scannedCodes", JSON.stringify(scannedCodes));
         resultEl.innerHTML = `<p class="valid">✅ Gültig: "${trimmed}"</p>`;
-        document.body.style.backgroundColor = "#c8e6c9";
+        containerEl.style.backgroundColor = "#c8e6c9";
         successSound.play();
         updateCodeList();
       }
 
       setTimeout(() => {
-        resetBackground();
+        resetVisualFeedback();
         isScanningPaused = false;
       }, 2000);
     }
@@ -260,6 +264,7 @@
         localStorage.removeItem("scannedCodes");
         updateCodeList();
         resultEl.innerHTML = "";
+        resetVisualFeedback();
       }
     }
 
@@ -282,7 +287,13 @@
 
       html5QrCode.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        {
+          fps: 10,
+          qrbox: function(viewfinderWidth, viewfinderHeight) {
+            const size = Math.min(viewfinderWidth, viewfinderHeight) * 0.8;
+            return { width: size, height: size };
+          }
+        },
         handleScan,
         error => {}
       ).catch(err => {
