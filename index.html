@@ -56,7 +56,8 @@
 
     #reader {
       width: 100%;
-      aspect-ratio: 1;
+      max-width: 400px;
+      aspect-ratio: 1 / 1; /* ⬅️ macht den Bereich quadratisch */
       margin: auto;
       position: relative;
       border-radius: 12px;
@@ -285,8 +286,8 @@
         {
           fps: 10,
           qrbox: function(viewfinderWidth, viewfinderHeight) {
-            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-            return { width: minEdge * 0.7, height: minEdge * 0.7 }; // quadratisch & responsive
+            const size = Math.min(viewfinderWidth, viewfinderHeight) * 0.8;
+            return { width: size, height: size }; // ⬅️ quadratischer Scanbereich
           }
         },
         handleScan,
