@@ -56,8 +56,7 @@
 
     #reader {
       width: 100%;
-      max-width: 400px;
-      aspect-ratio: 1 / 1; /* ⬅️ macht den Bereich quadratisch */
+      aspect-ratio: 1;
       margin: auto;
       position: relative;
       border-radius: 12px;
@@ -283,13 +282,7 @@
 
       html5QrCode.start(
         { facingMode: "environment" },
-        {
-          fps: 10,
-          qrbox: function(viewfinderWidth, viewfinderHeight) {
-            const size = Math.min(viewfinderWidth, viewfinderHeight) * 0.8;
-            return { width: size, height: size }; // ⬅️ quadratischer Scanbereich
-          }
-        },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
         handleScan,
         error => {}
       ).catch(err => {
