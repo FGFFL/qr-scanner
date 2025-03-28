@@ -282,7 +282,13 @@
 
       html5QrCode.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        {
+          fps: 10,
+          qrbox: function(viewfinderWidth, viewfinderHeight) {
+            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+            return { width: minEdge * 0.7, height: minEdge * 0.7 }; // quadratisch & responsive
+          }
+        },
         handleScan,
         error => {}
       ).catch(err => {
