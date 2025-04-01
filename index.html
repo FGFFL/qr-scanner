@@ -175,7 +175,7 @@
         mainEl.style.backgroundColor = "#f8d7da";
         errorSound.play();
       } else if (match.date && match.date !== today) {
-        resultEl.innerHTML = `<span class="invalid">⏳ Gültig am ${match.date}, nicht heute</span>`;
+        resultEl.innerHTML = `<span class="invalid">⏳ Gültig am ${match.date}</span>`;
         mainEl.style.backgroundColor = "#f8d7da";
         errorSound.play();
       } else if (scannedCodes.some(c => c.code === trimmed)) {
