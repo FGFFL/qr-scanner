@@ -33,6 +33,8 @@
       border-radius: 12px;
       box-shadow: 0 0 20px rgba(0,0,0,0.1);
       transition: background-color 0.4s ease;
+      position: relative;
+      z-index: 0;
     }
 
     #reader {
@@ -41,6 +43,9 @@
       margin: 0 auto;
       border: 4px solid #009DD4;
       border-radius: 10px;
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
     }
 
     #result {
@@ -53,6 +58,13 @@
     .valid { color: green; }
     .invalid { color: red; }
 
+    #controls {
+      text-align: center;
+      margin-top: 20px;
+      position: relative;
+      z-index: 2;
+    }
+
     button {
       margin: 10px;
       padding: 10px 20px;
@@ -61,6 +73,8 @@
       border-radius: 8px;
       color: white;
       cursor: pointer;
+      z-index: 10;
+      position: relative;
     }
 
     #btnReset { background: #D50C2F; }
@@ -89,7 +103,7 @@
     <div id="reader"></div>
     <div id="result"></div>
 
-    <div style="text-align: center;">
+    <div id="controls">
       <button id="btnReset">Zurücksetzen</button>
       <button id="btnExport">Exportieren</button>
     </div>
@@ -99,16 +113,16 @@
   </main>
 
   <script>
-    // 🔧 Firebase Config – ERSETZE durch deine echten Werte!
+    // ✅ Deine Firebase-Konfiguration
     const firebaseConfig = {
-  apiKey: "AIzaSyA7SoxaKUJtbAs8jQz_9hXaCrVJsIykSPo",
-  authDomain: "qr-scanner-c539d.firebaseapp.com",
-  databaseURL: "https://qr-scanner-c539d-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "qr-scanner-c539d",
-  storageBucket: "qr-scanner-c539d.firebasestorage.app",
-  messagingSenderId: "78986578550",
-  appId: "1:78986578550:web:6dc32d5712dd1094f9ed57"
-};
+      apiKey: "AIzaSyA7SoxaKUJtbAs8jQz_9hXaCrVJsIykSPo",
+      authDomain: "qr-scanner-c539d.firebaseapp.com",
+      databaseURL: "https://qr-scanner-c539d-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "qr-scanner-c539d",
+      storageBucket: "qr-scanner-c539d.firebasestorage.app",
+      messagingSenderId: "78986578550",
+      appId: "1:78986578550:web:6dc32d5712dd1094f9ed57"
+    };
 
     // 🔌 Initialisierung
     firebase.initializeApp(firebaseConfig);
@@ -118,12 +132,12 @@
     const resultEl = document.getElementById("result");
     const mainEl = document.getElementById("main");
     const codeListEl = document.getElementById("codeList");
-    let isScanPaused = false;
 
+    let isScanPaused = false;
     const today = new Date().toISOString().split("T")[0];
     let validCodes = [];
 
-    // 🔄 Live-Listener für alle Codes
+    // 🔁 Live-Updates anzeigen
     db.ref("scans").on("value", snapshot => {
       const data = snapshot.val() || {};
       codeListEl.innerHTML = "";
@@ -140,17 +154,17 @@
 
       const trimmed = code.trim();
       const timestamp = new Date().toLocaleTimeString();
-      const entry = validCodes.find(e => e.code === trimmed);
+      const match = validCodes.find(e => e.code === trimmed);
 
       db.ref("scans").once("value").then(snapshot => {
         const existing = snapshot.val() || {};
         const alreadyScanned = Object.values(existing).some(item => item.code === trimmed);
 
-        if (!entry) {
+        if (!match) {
           resultEl.innerHTML = `<span class="invalid">❌ Ungültiger Code</span>`;
           mainEl.style.backgroundColor = "#f8d7da";
-        } else if (entry.date && entry.date !== today) {
-          resultEl.innerHTML = `<span class="invalid">⏳ Gültig am ${entry.date}, nicht heute</span>`;
+        } else if (match.date && match.date !== today) {
+          resultEl.innerHTML = `<span class="invalid">⏳ Gültig am ${match.date}, nicht heute</span>`;
           mainEl.style.backgroundColor = "#f8d7da";
         } else if (alreadyScanned) {
           resultEl.innerHTML = `<span class="invalid">⚠️ Bereits gescannt</span>`;
@@ -171,7 +185,14 @@
     }
 
     function startScanner() {
-      reader.start({ facingMode: "environment" }, { fps: 10, qrbox: 300 }, handleScan);
+      reader.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 300 },
+        handleScan
+      ).catch(err => {
+        resultEl.textContent = "Fehler beim Starten des Scanners.";
+        console.error(err);
+      });
     }
 
     function exportCSV() {
@@ -201,7 +222,7 @@
     document.getElementById("btnExport").onclick = exportCSV;
     document.getElementById("btnReset").onclick = resetScans;
 
-    // Lade gültige Codes
+    // Lade gültige Codes aus JSON-Datei
     fetch("valid-codes.json")
       .then(res => res.json())
       .then(data => {
