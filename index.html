@@ -7,14 +7,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     :root {
-      --blue: #1976d2;
-      --green: #4caf50;
-      --red: #e53935;
+      --blue: #009DD4;
+      --green: #76B828;
+      --red: #D50C2F;
       --gray-bg: #f9f9f9;
     }
 
     body {
-      font-family: 'Segoe UI', sans-serif;
+      font-family: 'Din for PBR', din for PBR;
       margin: 0;
       padding: 0;
       background-color: var(--gray-bg);
@@ -72,9 +72,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      box-shadow:
-        0 0 0 60px rgba(0, 0, 0, 0.3),
-        inset 0 0 0 3px limegreen;
+      box-shadow: 0 0 0 60px rgba(0, 0, 0, 0.3), inset 0 0 0 3px limegreen;
       pointer-events: none;
     }
 
@@ -110,13 +108,9 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
 
-    .btn-reset {
-      background-color: var(--red);
-    }
-
-    .btn-export {
-      background-color: var(--green);
-    }
+    .btn-reset { background-color: var(--red); }
+    .btn-export { background-color: var(--green); }
+    .btn-camera { background-color: var(--blue); }
 
     button:hover {
       transform: translateY(-2px);
@@ -156,6 +150,12 @@
       color: var(--green);
     }
 
+    #counter {
+      margin-top: 15px;
+      font-weight: bold;
+      text-align: center;
+    }
+
     @media (max-width: 500px) {
       #container {
         padding: 20px 15px;
@@ -175,12 +175,14 @@
 <body>
   <header>
     <h1>QR-Code Scanner</h1>
-    <p>Mit optionalem Datum</p>
+    <p>Mit Teilnehmerzähler und Kameraauswahl</p>
   </header>
 
   <div id="container">
+    <select id="cameraSelect" aria-label="Kamera auswählen"></select>
     <div id="reader"><div id="overlay"></div></div>
-    <div id="result"></div>
+    <div id="result" aria-live="polite"></div>
+    <div id="counter"></div>
 
     <div id="controls">
       <button class="btn-reset" onclick="resetScans()">Zurücksetzen</button>
@@ -198,14 +200,17 @@
 
   <script>
     const resultEl = document.getElementById("result");
+    const counterEl = document.getElementById("counter");
     const containerEl = document.getElementById("container");
     const codeListEl = document.getElementById("codeList");
     const successSound = document.getElementById("successSound");
     const errorSound = document.getElementById("errorSound");
+    const cameraSelect = document.getElementById("cameraSelect");
 
     let scannedCodes = JSON.parse(localStorage.getItem("scannedCodes") || "[]");
     let isScanningPaused = false;
     let validCodes = [];
+    let html5QrCode;
 
     const today = new Date().toISOString().split("T")[0];
 
@@ -216,6 +221,7 @@
         li.textContent = `${item.code} – ${item.time}`;
         codeListEl.appendChild(li);
       });
+      counterEl.textContent = `Teilnehmer gescannt: ${scannedCodes.length}`;
     }
 
     function resetVisualFeedback() {
@@ -232,21 +238,21 @@
       const entry = validCodes.find(e => e.code === trimmed);
 
       if (!entry) {
-        resultEl.innerHTML = `<p class="invalid">❌ Ungültiger Code: "${trimmed}"</p>`;
+        resultEl.textContent = `❌ Ungültiger Code: "${trimmed}"`;
         containerEl.style.backgroundColor = "#ffcdd2";
         errorSound.play();
       } else if (entry.date && entry.date !== today) {
-        resultEl.innerHTML = `<p class="invalid">❌ Nicht gültig für heute (${today})</p>`;
+        resultEl.textContent = `❌ Nicht gültig für heute (${today})`;
         containerEl.style.backgroundColor = "#ffcdd2";
         errorSound.play();
       } else if (scannedCodes.some(item => item.code === trimmed)) {
-        resultEl.innerHTML = `<p class="invalid">⚠️ Bereits gescannt: "${trimmed}"</p>`;
+        resultEl.textContent = `⚠️ Bereits gescannt: "${trimmed}"`;
         containerEl.style.backgroundColor = "#ffcdd2";
         errorSound.play();
       } else {
         scannedCodes.push({ code: trimmed, time: timestamp });
         localStorage.setItem("scannedCodes", JSON.stringify(scannedCodes));
-        resultEl.innerHTML = `<p class="valid">✅ Gültig: "${trimmed}"</p>`;
+        resultEl.textContent = `✅ Gültig: "${trimmed}"`;
         containerEl.style.backgroundColor = "#c8e6c9";
         successSound.play();
         updateCodeList();
@@ -263,7 +269,7 @@
         scannedCodes = [];
         localStorage.removeItem("scannedCodes");
         updateCodeList();
-        resultEl.innerHTML = "";
+        resultEl.textContent = "";
         resetVisualFeedback();
       }
     }
@@ -282,23 +288,34 @@
       document.body.removeChild(link);
     }
 
-    function startScanner() {
-      const html5QrCode = new Html5Qrcode("reader");
-
+    function startScanner(deviceId) {
+      html5QrCode = new Html5Qrcode("reader");
       html5QrCode.start(
-        { facingMode: "environment" },
-        {
-          fps: 10,
-          qrbox: function(viewfinderWidth, viewfinderHeight) {
-            const size = Math.min(viewfinderWidth, viewfinderHeight) * 0.8;
-            return { width: size, height: size };
-          }
-        },
+        { deviceId: { exact: deviceId } },
+        { fps: 10, qrbox: { width: 250, height: 250 }, disableFlip: true },
         handleScan,
-        error => {}
+        () => {}
       ).catch(err => {
-        resultEl.innerHTML = `<p class="invalid">🚫 Scanner konnte nicht gestartet werden</p>`;
+        resultEl.textContent = `🚫 Scanner konnte nicht gestartet werden`;
         console.error(err);
+      });
+    }
+
+    function initCameraSelection() {
+      Html5Qrcode.getCameras().then(devices => {
+        if (devices.length === 0) throw "Keine Kamera gefunden";
+        devices.forEach((device, idx) => {
+          const option = document.createElement("option");
+          option.value = device.id;
+          option.text = device.label || `Kamera ${idx + 1}`;
+          cameraSelect.appendChild(option);
+        });
+        cameraSelect.onchange = () => {
+          html5QrCode.stop().then(() => startScanner(cameraSelect.value));
+        };
+        startScanner(devices[0].id);
+      }).catch(err => {
+        resultEl.textContent = `🚫 Fehler bei der Kameraauswahl`;
       });
     }
 
@@ -307,10 +324,10 @@
       .then(data => {
         validCodes = data.codes;
         updateCodeList();
-        startScanner();
+        initCameraSelection();
       })
       .catch(() => {
-        resultEl.innerHTML = `<p class="invalid">🚫 Fehler beim Laden der gültigen Codes</p>`;
+        resultEl.textContent = `🚫 Fehler beim Laden der gültigen Codes`;
       });
   </script>
 </body>
