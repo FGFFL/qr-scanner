@@ -2,192 +2,134 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>QR-Code Scanner Veranstaltung</title>
+  <title>QR-Code Check-in</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     :root {
       --blue: #009DD4;
       --green: #76B828;
       --red: #D50C2F;
-      --gray-bg: #f9f9f9;
+      --gray-bg: #f0f0f0;
     }
 
     body {
-      font-family: 'Segoe UI', sans-serif;
       margin: 0;
       padding: 0;
-      background-color: var(--gray-bg);
+      font-family: Arial, sans-serif;
+      background: var(--gray-bg);
       display: flex;
       flex-direction: column;
       align-items: center;
-      min-height: 100vh;
     }
 
     header {
-      background-color: var(--blue);
-      color: white;
       width: 100%;
-      padding: 30px 20px;
+      background: var(--blue);
+      color: white;
+      padding: 20px;
       text-align: center;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
 
-    header h1 {
-      margin: 0;
-      font-size: 2em;
-    }
-
-    header p {
-      margin-top: 8px;
-      font-size: 1em;
-      opacity: 0.9;
-    }
-
-    #container {
+    main {
       background: white;
-      padding: 30px 20px;
-      margin: 40px auto;
-      border-radius: 16px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.07);
       width: 600px;
-      transition: background-color 0.3s ease;
+      margin: 40px auto;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
     }
 
     #reader {
       width: 400px;
       height: 400px;
-      margin: auto;
-      position: relative;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 0 0 4px var(--blue);
-    }
-
-    #overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      box-shadow:
-        0 0 0 60px rgba(0, 0, 0, 0.3),
-        inset 0 0 0 3px limegreen;
-      pointer-events: none;
+      margin: 0 auto;
+      border: 4px solid var(--blue);
+      border-radius: 10px;
     }
 
     #result {
-      margin-top: 25px;
-      font-size: 1.2em;
-      font-weight: bold;
+      margin-top: 20px;
       text-align: center;
+      font-weight: bold;
+      font-size: 1.2em;
     }
 
     .valid { color: var(--green); }
     .invalid { color: var(--red); }
 
     #controls {
-      margin-top: 30px;
       display: flex;
       justify-content: space-between;
-      gap: 12px;
+      margin-top: 30px;
     }
 
     button {
       flex: 1;
-      min-width: 120px;
+      margin: 0 10px;
       padding: 12px;
       font-size: 1em;
       border: none;
-      border-radius: 10px;
-      font-weight: 600;
+      border-radius: 8px;
+      font-weight: bold;
       color: white;
       cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
 
-    .btn-reset {
-      background-color: var(--red);
-    }
+    #btnReset { background: var(--red); }
+    #btnExport { background: var(--green); }
 
-    .btn-export {
-      background-color: var(--green);
-    }
-
-    button:hover {
-      transform: translateY(-2px);
-      opacity: 0.95;
-    }
-
-    #scannedList {
-      margin-top: 35px;
-    }
-
-    #scannedList h3 {
-      margin-bottom: 10px;
-      font-size: 1.1em;
-      color: #333;
+    #scanned {
+      margin-top: 40px;
     }
 
     ul {
       list-style: none;
       padding: 0;
-      margin: 0;
     }
 
     li {
-      padding: 10px;
-      background-color: #f5f5f5;
+      background: #eee;
+      padding: 8px 12px;
       margin-bottom: 6px;
       border-radius: 6px;
-      font-size: 0.95em;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    li::before {
-      content: "✔️";
-      margin-right: 8px;
-      color: var(--green);
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>QR-Code Scanner</h1>
-    <p>Mit optionalem Datum</p>
+    <h1>QR-Code Check-in</h1>
+    <p>Scannen Sie den Teilnehmer-Code</p>
   </header>
 
-  <div id="container">
-    <div id="reader"><div id="overlay"></div></div>
-    <div id="result"></div>
+  <main>
+    <section id="scanner">
+      <div id="reader"></div>
+      <div id="result"></div>
+    </section>
 
-    <div id="controls">
-      <button class="btn-reset" onclick="resetScans()">Zurücksetzen</button>
-      <button class="btn-export" onclick="exportScans()">Als CSV exportieren</button>
-    </div>
+    <section id="controls">
+      <button id="btnReset">Zurücksetzen</button>
+      <button id="btnExport">Exportieren</button>
+    </section>
 
-    <div id="scannedList">
-      <h3>Bereits gescannte Codes:</h3>
+    <section id="scanned">
+      <h2>Gescannte Codes</h2>
       <ul id="codeList"></ul>
-    </div>
-  </div>
+    </section>
+  </main>
 
-  <audio id="successSound" src="success.mp3"></audio>
-  <audio id="errorSound" src="error.mp3"></audio>
+  <audio id="soundSuccess" src="success.mp3"></audio>
+  <audio id="soundError" src="error.mp3"></audio>
 
   <script>
     const resultEl = document.getElementById("result");
-    const containerEl = document.getElementById("container");
     const codeListEl = document.getElementById("codeList");
-    const successSound = document.getElementById("successSound");
-    const errorSound = document.getElementById("errorSound");
+    const successSound = document.getElementById("soundSuccess");
+    const errorSound = document.getElementById("soundError");
 
     let scannedCodes = JSON.parse(localStorage.getItem("scannedCodes") || "[]");
-    let isScanningPaused = false;
     let validCodes = [];
-
     const today = new Date().toISOString().split("T")[0];
 
     function updateCodeList() {
@@ -199,88 +141,52 @@
       });
     }
 
-    function resetVisualFeedback() {
-      document.body.style.backgroundColor = "#f9f9f9";
-      containerEl.style.backgroundColor = "white";
-    }
-
-    function handleScan(qrCodeMessage) {
-      if (isScanningPaused) return;
-      isScanningPaused = true;
-
-      const trimmed = qrCodeMessage.trim();
+    function handleScan(qrMessage) {
+      const trimmed = qrMessage.trim();
       const timestamp = new Date().toLocaleTimeString();
-      const entry = validCodes.find(e => e.code === trimmed);
+      const match = validCodes.find(c => c.code === trimmed);
 
-      if (!entry) {
-        resultEl.innerHTML = `<p class="invalid">❌ Ungültiger Code: "${trimmed}"</p>`;
-        containerEl.style.backgroundColor = "#ffcdd2";
+      if (!match) {
+        resultEl.innerHTML = `<span class="invalid">❌ Ungültig</span>`;
         errorSound.play();
-      } else if (entry.date && entry.date !== today) {
-        resultEl.innerHTML = `<p class="invalid">❌ Nicht gültig für heute (${today})</p>`;
-        containerEl.style.backgroundColor = "#ffcdd2";
+      } else if (match.date && match.date !== today) {
+        resultEl.innerHTML = `<span class="invalid">⏳ Nicht für heute</span>`;
         errorSound.play();
-      } else if (scannedCodes.some(item => item.code === trimmed)) {
-        resultEl.innerHTML = `<p class="invalid">⚠️ Bereits gescannt: "${trimmed}"</p>`;
-        containerEl.style.backgroundColor = "#ffcdd2";
+      } else if (scannedCodes.some(c => c.code === trimmed)) {
+        resultEl.innerHTML = `<span class="invalid">⚠️ Bereits gescannt</span>`;
         errorSound.play();
       } else {
         scannedCodes.push({ code: trimmed, time: timestamp });
         localStorage.setItem("scannedCodes", JSON.stringify(scannedCodes));
-        resultEl.innerHTML = `<p class="valid">✅ Gültig: "${trimmed}"</p>`;
-        containerEl.style.backgroundColor = "#c8e6c9";
-        successSound.play();
         updateCodeList();
+        resultEl.innerHTML = `<span class="valid">✅ Gültig</span>`;
+        successSound.play();
       }
-
-      setTimeout(() => {
-        resetVisualFeedback();
-        isScanningPaused = false;
-      }, 2000);
     }
 
-    function resetScans() {
-      if (confirm("Alle gescannten Codes wirklich löschen?")) {
+    document.getElementById("btnReset").onclick = () => {
+      if (confirm("Wirklich zurücksetzen?")) {
         scannedCodes = [];
         localStorage.removeItem("scannedCodes");
         updateCodeList();
         resultEl.innerHTML = "";
-        resetVisualFeedback();
       }
-    }
+    };
 
-    function exportScans() {
-      const csvContent = "data:text/csv;charset=utf-8," +
-        "Code,Zeit\n" +
-        scannedCodes.map(item => `${item.code},${item.time}`).join("\n");
-
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", "gescannte_codes.csv");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
+    document.getElementById("btnExport").onclick = () => {
+      const csv = "Code,Zeit\n" + scannedCodes.map(c => `${c.code},${c.time}`).join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "codes.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    };
 
     function startScanner() {
       const html5QrCode = new Html5Qrcode("reader");
-
-      html5QrCode.start(
-        { facingMode: "environment" },
-        {
-          fps: 10,
-          qrbox: function(viewfinderWidth, viewfinderHeight) {
-            const size = 300;
-            return { width: size, height: size };
-          }
-        },
-        handleScan,
-        error => {}
-      ).catch(err => {
-        resultEl.innerHTML = `<p class="invalid">🚫 Scanner konnte nicht gestartet werden</p>`;
-        console.error(err);
-      });
+      html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, handleScan);
     }
 
     fetch("valid-codes.json")
@@ -291,7 +197,7 @@
         startScanner();
       })
       .catch(() => {
-        resultEl.innerHTML = `<p class="invalid">🚫 Fehler beim Laden der gültigen Codes</p>`;
+        resultEl.textContent = "Fehler beim Laden der Codes.";
       });
   </script>
 </body>
