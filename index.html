@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>QR-Code Scanner Veranstaltung</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     :root {
       --blue: #009DD4;
@@ -50,15 +49,13 @@
       margin: 40px auto;
       border-radius: 16px;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.07);
-      width: 95%;
-      max-width: 600px;
+      width: 600px;
       transition: background-color 0.3s ease;
     }
 
     #reader {
-      width: 100%;
-      max-width: 400px;
-      aspect-ratio: 1;
+      width: 400px;
+      height: 400px;
       margin: auto;
       position: relative;
       border-radius: 12px;
@@ -92,7 +89,6 @@
       margin-top: 30px;
       display: flex;
       justify-content: space-between;
-      flex-wrap: wrap;
       gap: 12px;
     }
 
@@ -154,21 +150,6 @@
       content: "✔️";
       margin-right: 8px;
       color: var(--green);
-    }
-
-    @media (max-width: 500px) {
-      #container {
-        padding: 20px 15px;
-      }
-
-      button {
-        font-size: 0.9em;
-        padding: 10px;
-      }
-
-      li {
-        font-size: 0.85em;
-      }
     }
   </style>
 </head>
@@ -290,7 +271,7 @@
         {
           fps: 10,
           qrbox: function(viewfinderWidth, viewfinderHeight) {
-            const size = Math.min(viewfinderWidth, viewfinderHeight) * 0.8;
+            const size = 300;
             return { width: size, height: size };
           }
         },
