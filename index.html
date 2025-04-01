@@ -112,8 +112,11 @@
     <ul id="codeList"></ul>
   </main>
 
+  <audio id="successSound" src="success.mp3"></audio>
+  <audio id="errorSound" src="error.mp3"></audio>
+
   <script>
-    // ✅ Deine Firebase-Konfiguration
+    // ✅ Firebase-Konfiguration
     const firebaseConfig = {
       apiKey: "AIzaSyA7SoxaKUJtbAs8jQz_9hXaCrVJsIykSPo",
       authDomain: "qr-scanner-c539d.firebaseapp.com",
@@ -124,7 +127,6 @@
       appId: "1:78986578550:web:6dc32d5712dd1094f9ed57"
     };
 
-    // 🔌 Initialisierung
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
@@ -132,12 +134,21 @@
     const resultEl = document.getElementById("result");
     const mainEl = document.getElementById("main");
     const codeListEl = document.getElementById("codeList");
+    const successSound = document.getElementById("successSound");
+    const errorSound = document.getElementById("errorSound");
 
     let isScanPaused = false;
+    let isScannerActive = false;
     const today = new Date().toISOString().split("T")[0];
     let validCodes = [];
 
-    // 🔁 Live-Updates anzeigen
+    // 🎵 Aktiviert Audio-Nutzung nach erstem Klick
+    document.body.addEventListener("click", () => {
+      successSound.play().catch(() => {});
+      errorSound.play().catch(() => {});
+    }, { once: true });
+
+    // 🔁 Live-Anzeige aller Scans
     db.ref("scans").on("value", snapshot => {
       const data = snapshot.val() || {};
       codeListEl.innerHTML = "";
@@ -163,17 +174,21 @@
         if (!match) {
           resultEl.innerHTML = `<span class="invalid">❌ Ungültiger Code</span>`;
           mainEl.style.backgroundColor = "#f8d7da";
+          errorSound.play();
         } else if (match.date && match.date !== today) {
           resultEl.innerHTML = `<span class="invalid">⏳ Gültig am ${match.date}, nicht heute</span>`;
           mainEl.style.backgroundColor = "#f8d7da";
+          errorSound.play();
         } else if (alreadyScanned) {
           resultEl.innerHTML = `<span class="invalid">⚠️ Bereits gescannt</span>`;
           mainEl.style.backgroundColor = "#f8d7da";
+          errorSound.play();
         } else {
           const newRef = db.ref("scans").push();
           newRef.set({ code: trimmed, time: timestamp });
           resultEl.innerHTML = `<span class="valid">✅ Gültiger Code</span>`;
           mainEl.style.backgroundColor = "#d4edda";
+          successSound.play();
         }
 
         setTimeout(() => {
@@ -185,14 +200,18 @@
     }
 
     function startScanner() {
-      reader.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: 300 },
-        handleScan
-      ).catch(err => {
-        resultEl.textContent = "Fehler beim Starten des Scanners.";
-        console.error(err);
-      });
+      if (!isScannerActive) {
+        reader.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: 300 },
+          handleScan
+        ).then(() => {
+          isScannerActive = true;
+        }).catch(err => {
+          resultEl.textContent = "Fehler beim Starten des Scanners.";
+          console.error(err);
+        });
+      }
     }
 
     function exportCSV() {
@@ -215,14 +234,24 @@
 
     function resetScans() {
       if (confirm("Alle Scans wirklich löschen?")) {
-        db.ref("scans").remove();
+        if (isScannerActive) {
+          reader.stop().then(() => {
+            isScannerActive = false;
+            db.ref("scans").remove().then(() => {
+              resultEl.innerHTML = "";
+              mainEl.style.backgroundColor = "white";
+              startScanner();
+            });
+          }).catch(err => console.error("Fehler beim Stoppen:", err));
+        } else {
+          db.ref("scans").remove();
+        }
       }
     }
 
     document.getElementById("btnExport").onclick = exportCSV;
     document.getElementById("btnReset").onclick = resetScans;
 
-    // Lade gültige Codes aus JSON-Datei
     fetch("valid-codes.json")
       .then(res => res.json())
       .then(data => {
