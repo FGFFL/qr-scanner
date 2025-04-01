@@ -39,6 +39,7 @@
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
       z-index: 1;
       position: relative;
+      transition: background-color 0.5s ease;
     }
 
     #reader-wrapper {
@@ -55,18 +56,6 @@
     #reader {
       width: 100%;
       height: 100%;
-    }
-
-    #overlay-frame {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 200px;
-      height: 200px;
-      transform: translate(-50%, -50%);
-      border: 2px dashed limegreen;
-      z-index: 5;
-      pointer-events: none;
     }
 
     #result {
@@ -125,11 +114,10 @@
     <p>Scannen Sie den Teilnehmer-Code</p>
   </header>
 
-  <main>
+  <main id="main">
     <section id="scanner">
       <div id="reader-wrapper">
         <div id="reader"></div>
-        <div id="overlay-frame"></div>
       </div>
       <div id="result"></div>
     </section>
@@ -153,6 +141,7 @@
     const codeListEl = document.getElementById("codeList");
     const successSound = document.getElementById("soundSuccess");
     const errorSound = document.getElementById("soundError");
+    const mainEl = document.getElementById("main");
 
     let scannedCodes = JSON.parse(localStorage.getItem("scannedCodes") || "[]");
     let validCodes = [];
@@ -167,27 +156,39 @@
       });
     }
 
+    function resetVisualFeedback() {
+      mainEl.style.backgroundColor = "white";
+    }
+
     function handleScan(qrMessage) {
       const trimmed = qrMessage.trim();
       const timestamp = new Date().toLocaleTimeString();
       const match = validCodes.find(c => c.code === trimmed);
 
       if (!match) {
-        resultEl.innerHTML = `<span class="invalid">❌ Ungültig</span>`;
+        resultEl.innerHTML = `<span class="invalid">❌ Ungültiger Code</span>`;
+        mainEl.style.backgroundColor = "#f8d7da"; // hellrot
         errorSound.play();
       } else if (match.date && match.date !== today) {
-        resultEl.innerHTML = `<span class="invalid">⏳ Nicht für heute</span>`;
+        resultEl.innerHTML = `<span class="invalid">⏳ Gültig am ${match.date}, nicht heute</span>`;
+        mainEl.style.backgroundColor = "#f8d7da";
         errorSound.play();
       } else if (scannedCodes.some(c => c.code === trimmed)) {
         resultEl.innerHTML = `<span class="invalid">⚠️ Bereits gescannt</span>`;
+        mainEl.style.backgroundColor = "#f8d7da";
         errorSound.play();
       } else {
         scannedCodes.push({ code: trimmed, time: timestamp });
         localStorage.setItem("scannedCodes", JSON.stringify(scannedCodes));
         updateCodeList();
-        resultEl.innerHTML = `<span class="valid">✅ Gültig</span>`;
+        resultEl.innerHTML = `<span class="valid">✅ Gültiger Code</span>`;
+        mainEl.style.backgroundColor = "#d4edda"; // hellgrün
         successSound.play();
       }
+
+      setTimeout(() => {
+        resetVisualFeedback();
+      }, 2000);
     }
 
     document.getElementById("btnReset").onclick = () => {
@@ -196,6 +197,7 @@
         localStorage.removeItem("scannedCodes");
         updateCodeList();
         resultEl.innerHTML = "";
+        resetVisualFeedback();
       }
     };
 
