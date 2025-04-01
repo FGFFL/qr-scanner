@@ -146,8 +146,8 @@
     let scannedCodes = JSON.parse(localStorage.getItem("scannedCodes") || "[]");
     let validCodes = [];
     const today = new Date().toISOString().split("T")[0];
-
-    let html5QrCode; // globale Instanz
+    let html5QrCode;
+    let isScanPaused = false;
 
     function updateCodeList() {
       codeListEl.innerHTML = "";
@@ -163,7 +163,8 @@
     }
 
     function handleScan(qrMessage) {
-      html5QrCode.stop(); // Scanner pausieren, um Doppel-Erkennung zu vermeiden
+      if (isScanPaused) return;
+      isScanPaused = true;
 
       const trimmed = qrMessage.trim();
       const timestamp = new Date().toLocaleTimeString();
@@ -192,8 +193,8 @@
 
       setTimeout(() => {
         resetVisualFeedback();
-        startScanner(); // Scanner wieder starten
-      }, 3000); // verlängert auf 3 Sekunden
+        isScanPaused = false;
+      }, 2000);
     }
 
     document.getElementById("btnReset").onclick = () => {
