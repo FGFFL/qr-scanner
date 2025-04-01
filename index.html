@@ -5,22 +5,182 @@
   <title>QR-Code Scanner Veranstaltung</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI&display=swap" rel="stylesheet">
   <style>
-    /* ... (CSS bleibt wie im vorherigen Zustand) ... */
+    :root {
+      --blue: #1976d2;
+      --green: #4caf50;
+      --red: #e53935;
+      --gray-bg: #f9f9f9;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: var(--gray-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    header {
+      background-color: var(--blue);
+      color: white;
+      width: 100%;
+      padding: 30px 20px;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 2em;
+    }
+
+    header p {
+      margin-top: 8px;
+      font-size: 1em;
+      opacity: 0.9;
+    }
+
+    #container {
+      background: white;
+      padding: 30px 20px;
+      margin: 40px auto;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.07);
+      width: 95%;
+      max-width: 600px;
+      transition: background-color 0.3s ease;
+    }
+
+    #reader {
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 1;
+      margin: auto;
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 0 4px var(--blue);
+    }
+
+    #overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      box-shadow:
+        0 0 0 60px rgba(0, 0, 0, 0.3),
+        inset 0 0 0 3px limegreen;
+      pointer-events: none;
+    }
+
+    #result {
+      margin-top: 25px;
+      font-size: 1.2em;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .valid { color: var(--green); }
+    .invalid { color: var(--red); }
+
+    #controls {
+      margin-top: 30px;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    button {
+      flex: 1;
+      min-width: 120px;
+      padding: 12px;
+      font-size: 1em;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .btn-reset {
+      background-color: var(--red);
+    }
+
+    .btn-export {
+      background-color: var(--green);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      opacity: 0.95;
+    }
+
+    #scannedList {
+      margin-top: 35px;
+    }
+
+    #scannedList h3 {
+      margin-bottom: 10px;
+      font-size: 1.1em;
+      color: #333;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    li {
+      padding: 10px;
+      background-color: #f5f5f5;
+      margin-bottom: 6px;
+      border-radius: 6px;
+      font-size: 0.95em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    li::before {
+      content: "✔️";
+      margin-right: 8px;
+      color: var(--green);
+    }
+
+    @media (max-width: 500px) {
+      #container {
+        padding: 20px 15px;
+      }
+
+      button {
+        font-size: 0.9em;
+        padding: 10px;
+      }
+
+      li {
+        font-size: 0.85em;
+      }
+    }
   </style>
 </head>
 <body>
   <header>
     <h1>QR-Code Scanner</h1>
-    <p>Mit Teilnehmerzähler und Kameraauswahl</p>
+    <p>Mit optionalem Datum</p>
   </header>
 
   <div id="container">
-    <select id="cameraSelect" aria-label="Kamera auswählen"></select>
     <div id="reader"><div id="overlay"></div></div>
-    <div id="result" aria-live="polite"></div>
-    <div id="counter"></div>
+    <div id="result"></div>
 
     <div id="controls">
       <button class="btn-reset" onclick="resetScans()">Zurücksetzen</button>
@@ -38,17 +198,14 @@
 
   <script>
     const resultEl = document.getElementById("result");
-    const counterEl = document.getElementById("counter");
     const containerEl = document.getElementById("container");
     const codeListEl = document.getElementById("codeList");
     const successSound = document.getElementById("successSound");
     const errorSound = document.getElementById("errorSound");
-    const cameraSelect = document.getElementById("cameraSelect");
 
     let scannedCodes = JSON.parse(localStorage.getItem("scannedCodes") || "[]");
     let isScanningPaused = false;
     let validCodes = [];
-    let html5QrCode;
 
     const today = new Date().toISOString().split("T")[0];
 
@@ -59,7 +216,6 @@
         li.textContent = `${item.code} – ${item.time}`;
         codeListEl.appendChild(li);
       });
-      counterEl.textContent = `Teilnehmer gescannt: ${scannedCodes.length}`;
     }
 
     function resetVisualFeedback() {
@@ -76,21 +232,21 @@
       const entry = validCodes.find(e => e.code === trimmed);
 
       if (!entry) {
-        resultEl.textContent = `❌ Ungültiger Code: "${trimmed}"`;
+        resultEl.innerHTML = `<p class="invalid">❌ Ungültiger Code: "${trimmed}"</p>`;
         containerEl.style.backgroundColor = "#ffcdd2";
         errorSound.play();
       } else if (entry.date && entry.date !== today) {
-        resultEl.textContent = `❌ Nicht gültig für heute (${today})`;
+        resultEl.innerHTML = `<p class="invalid">❌ Nicht gültig für heute (${today})</p>`;
         containerEl.style.backgroundColor = "#ffcdd2";
         errorSound.play();
       } else if (scannedCodes.some(item => item.code === trimmed)) {
-        resultEl.textContent = `⚠️ Bereits gescannt: "${trimmed}"`;
+        resultEl.innerHTML = `<p class="invalid">⚠️ Bereits gescannt: "${trimmed}"</p>`;
         containerEl.style.backgroundColor = "#ffcdd2";
         errorSound.play();
       } else {
         scannedCodes.push({ code: trimmed, time: timestamp });
         localStorage.setItem("scannedCodes", JSON.stringify(scannedCodes));
-        resultEl.textContent = `✅ Gültig: "${trimmed}"`;
+        resultEl.innerHTML = `<p class="valid">✅ Gültig: "${trimmed}"</p>`;
         containerEl.style.backgroundColor = "#c8e6c9";
         successSound.play();
         updateCodeList();
@@ -107,7 +263,7 @@
         scannedCodes = [];
         localStorage.removeItem("scannedCodes");
         updateCodeList();
-        resultEl.textContent = "";
+        resultEl.innerHTML = "";
         resetVisualFeedback();
       }
     }
@@ -126,34 +282,23 @@
       document.body.removeChild(link);
     }
 
-    function startScanner(deviceId) {
-      html5QrCode = new Html5Qrcode("reader");
-      html5QrCode.start(
-        { deviceId: { exact: deviceId } },
-        { fps: 10, qrbox: { width: 250, height: 250 }, disableFlip: true },
-        handleScan,
-        () => {}
-      ).catch(err => {
-        resultEl.textContent = `🛑 Scanner konnte nicht gestartet werden`;
-        console.error(err);
-      });
-    }
+    function startScanner() {
+      const html5QrCode = new Html5Qrcode("reader");
 
-    function initCameraSelection() {
-      Html5Qrcode.getCameras().then(devices => {
-        if (devices.length === 0) throw "Keine Kamera gefunden";
-        devices.forEach((device, idx) => {
-          const option = document.createElement("option");
-          option.value = device.id;
-          option.text = device.label || `Kamera ${idx + 1}`;
-          cameraSelect.appendChild(option);
-        });
-        cameraSelect.onchange = () => {
-          html5QrCode.stop().then(() => startScanner(cameraSelect.value));
-        };
-        startScanner(devices[0].id);
-      }).catch(err => {
-        resultEl.textContent = `🛑 Fehler bei der Kameraauswahl`;
+      html5QrCode.start(
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: function(viewfinderWidth, viewfinderHeight) {
+            const size = Math.min(viewfinderWidth, viewfinderHeight) * 0.8;
+            return { width: size, height: size };
+          }
+        },
+        handleScan,
+        error => {}
+      ).catch(err => {
+        resultEl.innerHTML = `<p class="invalid">🚫 Scanner konnte nicht gestartet werden</p>`;
+        console.error(err);
       });
     }
 
@@ -162,10 +307,10 @@
       .then(data => {
         validCodes = data.codes;
         updateCodeList();
-        initCameraSelection();
+        startScanner();
       })
       .catch(() => {
-        resultEl.textContent = `🛑 Fehler beim Laden der gültigen Codes`;
+        resultEl.innerHTML = `<p class="invalid">🚫 Fehler beim Laden der gültigen Codes</p>`;
       });
   </script>
 </body>
