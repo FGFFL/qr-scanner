@@ -2,6 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>QR-Code Live Scanner</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -91,6 +92,23 @@
       margin-bottom: 6px;
       border-radius: 6px;
     }
+
+    @media (max-width: 640px) {
+      main {
+        width: 90%;
+        padding: 15px;
+      }
+
+      #reader {
+        width: 100%;
+        height: auto;
+      }
+
+      button {
+        width: 100%;
+        margin: 10px 0;
+      }
+    }
   </style>
 </head>
 <body>
@@ -104,25 +122,24 @@
     <div id="result"></div>
 
     <div id="controls">
-      <button id="btnReset">Zurücksetzen</button>
-      <button id="btnExport">Exportieren</button>
+      <button id="btnReset" aria-label="Alle Scans zurücksetzen">Zurücksetzen</button>
+      <button id="btnExport" aria-label="Scans als CSV exportieren">Exportieren</button>
     </div>
 
-    <h3>Gescannte Codes:</h3>
-    <ul id="codeList"></ul>
+    <h3 id="scanListHeading">Gescannte Codes:</h3>
+    <ul id="codeList" aria-labelledby="scanListHeading" aria-live="polite"></ul>
   </main>
 
   <audio id="successSound" src="success.mp3"></audio>
   <audio id="errorSound" src="error.mp3"></audio>
 
   <script>
-    // ✅ Firebase-Konfiguration
     const firebaseConfig = {
       apiKey: "AIzaSyA7SoxaKUJtbAs8jQz_9hXaCrVJsIykSPo",
       authDomain: "qr-scanner-c539d.firebaseapp.com",
       databaseURL: "https://qr-scanner-c539d-default-rtdb.europe-west1.firebasedatabase.app",
       projectId: "qr-scanner-c539d",
-      storageBucket: "qr-scanner-c539d.firebasestorage.app",
+      storageBucket: "qr-scanner-c539d.appspot.com",
       messagingSenderId: "78986578550",
       appId: "1:78986578550:web:6dc32d5712dd1094f9ed57"
     };
@@ -142,13 +159,11 @@
     const today = new Date().toISOString().split("T")[0];
     let validCodes = [];
 
-    // 🎵 Aktiviert Audio-Nutzung nach erstem Klick
     document.body.addEventListener("click", () => {
       successSound.play().catch(() => {});
       errorSound.play().catch(() => {});
     }, { once: true });
 
-    // 🔁 Live-Anzeige aller Scans
     db.ref("scans").on("value", snapshot => {
       const data = snapshot.val() || {};
       codeListEl.innerHTML = "";
@@ -253,10 +268,17 @@
     document.getElementById("btnReset").onclick = resetScans;
 
     fetch("valid-codes.json")
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error("Datei konnte nicht geladen werden");
+        return res.json();
+      })
       .then(data => {
         validCodes = data.codes;
         startScanner();
+      })
+      .catch(err => {
+        resultEl.innerHTML = `<span class="invalid">🚫 Fehler beim Laden der Codes</span>`;
+        console.error("Fetch Error:", err);
       });
   </script>
 </body>
