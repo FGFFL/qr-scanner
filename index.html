@@ -27,21 +27,25 @@
 
     main {
       background: white;
-      width: 100%;
-      min-height: 100vh;
-      padding: 16px;
-      box-sizing: border-box;
+      width: 600px;
+      margin: 30px auto;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+      transition: background-color 0.4s ease;
+      position: relative;
+      z-index: 0;
     }
 
     #reader {
-      width: 100%;
-      max-width: 300px;
-      height: auto;
-      aspect-ratio: 1 / 1;
+      width: 300px;
+      height: 300px;
       margin: 0 auto;
       border: 4px solid #009DD4;
       border-radius: 10px;
+      position: relative;
       overflow: hidden;
+      z-index: 1;
     }
 
     #result {
@@ -57,94 +61,42 @@
     #controls {
       text-align: center;
       margin-top: 20px;
+      position: relative;
+      z-index: 2;
     }
 
     button {
       margin: 10px;
-      padding: 12px 24px;
-      font-size: 1rem;
+      padding: 10px 20px;
       font-weight: bold;
       border: none;
       border-radius: 8px;
       color: white;
       cursor: pointer;
+      z-index: 10;
+      position: relative;
     }
 
     #btnReset { background: #D50C2F; }
     #btnExport { background: #76B828; }
 
-    #searchInput {
-      width: 100%;
-      max-width: 400px;
-      padding: 12px;
-      margin: 30px auto 10px;
-      display: block;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 1rem;
+    ul {
+      list-style: none;
+      padding: 0;
     }
 
-    table {
-      width: 100%;
-      max-width: 100%;
-      border-collapse: collapse;
-      margin: 0 auto 30px;
-      overflow-x: auto;
-      display: block;
-    }
-
-    thead {
-      background: #009DD4;
-      color: white;
-    }
-
-    th, td {
-      padding: 12px;
-      text-align: left;
-      border-bottom: 1px solid #ddd;
-      font-family: monospace;
-      font-size: 0.95rem;
-      white-space: nowrap;
-    }
-
-    h3 {
-      text-align: center;
-      margin-top: 40px;
-    }
-
-    @media (max-width: 480px) {
-      header h1 {
-        font-size: 1.5rem;
-      }
-
-      button {
-        width: 100%;
-        max-width: 300px;
-      }
-
-      #reader {
-        width: 90%;
-        max-width: 100%;
-      }
-
-      #searchInput {
-        width: 90%;
-      }
-
-      th, td {
-        font-size: 0.9rem;
-      }
-
-      h3 {
-        font-size: 1.1rem;
-      }
+    li {
+      padding: 8px;
+      background: #eee;
+      margin-bottom: 6px;
+      border-radius: 6px;
     }
   </style>
 </head>
 <body>
   <header>
     <h1>QR-Code Check-in</h1>
-    <p>Live-Synchronisierung mit Firebase</p>
+    <p>Seh-Fest 2025</p>
   </header>
 
   <main id="main">
@@ -156,30 +108,21 @@
       <button id="btnExport">Exportieren</button>
     </div>
 
-    <input type="text" id="searchInput" placeholder="Code oder Zeit suchen..." />
-
     <h3>Gescannte Codes:</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Code</th>
-          <th>Zeit</th>
-        </tr>
-      </thead>
-      <tbody id="codeList"></tbody>
-    </table>
+    <ul id="codeList"></ul>
   </main>
 
   <audio id="successSound" src="success.mp3"></audio>
   <audio id="errorSound" src="error.mp3"></audio>
 
   <script>
+    // ✅ Firebase-Konfiguration
     const firebaseConfig = {
       apiKey: "AIzaSyA7SoxaKUJtbAs8jQz_9hXaCrVJsIykSPo",
       authDomain: "qr-scanner-c539d.firebaseapp.com",
       databaseURL: "https://qr-scanner-c539d-default-rtdb.europe-west1.firebasedatabase.app",
       projectId: "qr-scanner-c539d",
-      storageBucket: "qr-scanner-c539d.appspot.com",
+      storageBucket: "qr-scanner-c539d.firebasestorage.app",
       messagingSenderId: "78986578550",
       appId: "1:78986578550:web:6dc32d5712dd1094f9ed57"
     };
@@ -191,7 +134,6 @@
     const resultEl = document.getElementById("result");
     const mainEl = document.getElementById("main");
     const codeListEl = document.getElementById("codeList");
-    const searchInput = document.getElementById("searchInput");
     const successSound = document.getElementById("successSound");
     const errorSound = document.getElementById("errorSound");
 
@@ -200,26 +142,20 @@
     const today = new Date().toISOString().split("T")[0];
     let validCodes = [];
 
+    // 🎵 Aktiviert Audio-Nutzung nach erstem Klick
     document.body.addEventListener("click", () => {
       successSound.play().catch(() => {});
       errorSound.play().catch(() => {});
     }, { once: true });
 
+    // 🔁 Live-Anzeige aller Scans
     db.ref("scans").on("value", snapshot => {
       const data = snapshot.val() || {};
       codeListEl.innerHTML = "";
       Object.entries(data).forEach(([key, entry]) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `<td>${entry.code}</td><td>${entry.time}</td>`;
-        codeListEl.appendChild(row);
-      });
-    });
-
-    searchInput.addEventListener("input", function () {
-      const filter = this.value.toLowerCase();
-      document.querySelectorAll("#codeList tr").forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(filter) ? "" : "none";
+        const li = document.createElement("li");
+        li.textContent = `${entry.code} – ${entry.time}`;
+        codeListEl.appendChild(li);
       });
     });
 
